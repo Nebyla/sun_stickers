@@ -1,19 +1,19 @@
 enum StickerType { all, toy, fauna, plant, berry, fruit, other }
 
 class Sticker {
-  final int id;
-  final String image;
-  final String name;
-  final double price;
-  final int quantity;
-  final bool favorite;
-  final String description;
-  final double score;
-  final StickerType type;
-  final int voter;
-  final bool cart;
+  int id;
+  String image;
+  String name;
+  double price;
+  int quantity;
+  bool favorite;
+  String description;
+  double score;
+  StickerType type;
+  int voter;
+  bool cart;
 
-  const Sticker({
+  Sticker({
     required this.id,
     required this.image,
     required this.name,
@@ -26,32 +26,4 @@ class Sticker {
     required this.voter,
     required this.cart,
   });
-
-  Sticker copyWith({
-    int? id,
-    String? image,
-    String? name,
-    double? price,
-    int? quantity,
-    bool? favorite,
-    String? description,
-    double? score,
-    StickerType? type,
-    int? voter,
-    bool? cart,
-  }) {
-    return Sticker(
-      id: id ?? this.id,
-      image: image ?? this.image,
-      name: name ?? this.name,
-      price: price ?? this.price,
-      quantity: quantity ?? this.quantity,
-      favorite: favorite ?? this.favorite,
-      description: description ?? this.description,
-      score: score ?? this.score,
-      type: type ?? this.type,
-      voter: voter ?? this.voter,
-      cart: cart ?? this.cart,
-    );
-  }
 }

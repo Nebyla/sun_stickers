@@ -1,13 +1,11 @@
-
-import 'package:flutter/material.dart' hide Badge;
-import 'package:studentwor/ui/_ui.dart';
 import 'package:badges/badges.dart';
+import 'package:flutter/material.dart' hide Badge;
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 
 import '../../data/_data.dart';
 import '../../ui_kit/_ui_kit.dart';
-import '../widgets/sticker_list_view.dart';
+import '../_ui.dart';
 
 class StickerList extends StatelessWidget {
   StickerList({super.key});

@@ -1,17 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-
-import 'states/sticker_state.dart';
+import 'package:get/get.dart';
+import 'states/sticker_controller.dart';
 import 'ui/_ui.dart';
 import 'ui_kit/_ui_kit.dart';
 
 void main() {
-  runApp(
-    ChangeNotifierProvider(
-      create: (_) => StickerState(),
-      child: const MyApp(),
-    ),
-  );
+  Get.put(StickerController());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -19,12 +14,16 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final state = context.watch<StickerState>();
-    return MaterialApp(
-      title: 'Sunny Stickers',
-      debugShowCheckedModeBanner: false,
-      theme: state.light ? AppTheme.lightTheme : AppTheme.darkTheme,
-      home: const HomeScreen(),
-    );
+    final controller = Get.find<StickerController>();
+    return Obx(() {
+      return GetMaterialApp(
+        title: 'Sunny Stickers',
+        debugShowCheckedModeBanner: false,
+        theme: controller.light.value
+            ? AppTheme.lightTheme
+            : AppTheme.darkTheme,
+        home: const HomeScreen(),
+      );
+    });
   }
 }

@@ -1,11 +1,10 @@
 import 'package:badges/badges.dart';
 import 'package:flutter/material.dart' hide Badge;
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:provider/provider.dart';
-
-import '../../states/sticker_state.dart';
+import 'package:get/get.dart';
+import '../../states/sticker_controller.dart';
+import '../extensions/_extensions.dart';
 import '../../ui_kit/_ui_kit.dart';
-import '../extensions/app_extensions.dart';
 import '../widgets/_widgets.dart';
 
 class StickerList extends StatelessWidget {
@@ -13,10 +12,10 @@ class StickerList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final state = context.watch<StickerState>();
+    final c = Get.find<StickerController>();
 
     return Scaffold(
-      appBar: _appBar(context),
+      appBar: _appBar(context, c),
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: SingleChildScrollView(
@@ -27,11 +26,13 @@ class StickerList extends StatelessWidget {
                   style: Theme.of(context).textTheme.headlineSmall),
               Text("What sticker do you want\nto buy today",
                   style: Theme.of(context).textTheme.displayLarge),
-              _searchBar(context),
+              _searchBar(),
               Text("Available for you",
                   style: Theme.of(context).textTheme.displaySmall),
-              _categories(context, state),
-              StickerListView(stickers: state.stickersByCategory),
+
+              _categories(context, c),
+              Obx(() => StickerListView(stickers: c.stickersByCategory.value)),
+
               Padding(
                 padding: const EdgeInsets.only(top: 25, bottom: 5),
                 child: Row(
@@ -50,10 +51,10 @@ class StickerList extends StatelessWidget {
                   ],
                 ),
               ),
-              StickerListView(
-                stickers: state.stickers,
+              Obx(() => StickerListView(
+                stickers: c.stickers.value,
                 isReversed: true,
-              ),
+              )),
             ],
           ),
         ),
@@ -61,11 +62,11 @@ class StickerList extends StatelessWidget {
     );
   }
 
-  PreferredSizeWidget _appBar(BuildContext context) {
+  PreferredSizeWidget _appBar(BuildContext context, StickerController c) {
     return AppBar(
       leading: IconButton(
         icon: const FaIcon(FontAwesomeIcons.dice),
-        onPressed: () => context.read<StickerState>().toggleTheme(),
+        onPressed: c.toggleTheme,
       ),
       title: Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -89,13 +90,11 @@ class StickerList extends StatelessWidget {
     );
   }
 
-  Widget _searchBar(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 10),
+  Widget _searchBar() {
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: 20, horizontal: 10),
       child: TextField(
-        onChanged: (value) =>
-            context.read<StickerState>().onSearchChanged(value),
-        decoration: const InputDecoration(
+        decoration: InputDecoration(
           hintText: 'Search sticker',
           prefixIcon: Icon(Icons.search, color: Colors.grey),
         ),
@@ -103,18 +102,19 @@ class StickerList extends StatelessWidget {
     );
   }
 
-  Widget _categories(BuildContext context, StickerState state) {
+  Widget _categories(BuildContext context, StickerController c) {
     return Padding(
       padding: const EdgeInsets.only(top: 8.0),
       child: SizedBox(
         height: 40,
-        child: ListView.separated(
+        child: Obx(() => ListView.separated(
           scrollDirection: Axis.horizontal,
+          itemCount: c.categories.length,
+          separatorBuilder: (_, __) => Container(width: 15),
           itemBuilder: (_, index) {
-            final category = state.categories[index];
+            final category = c.categories[index];
             return GestureDetector(
-              onTap: () =>
-                  context.read<StickerState>().onCategoryTap(category),
+              onTap: () => c.onCategoryTap(category),
               child: Container(
                 width: 100,
                 alignment: Alignment.center,
@@ -132,9 +132,7 @@ class StickerList extends StatelessWidget {
               ),
             );
           },
-          separatorBuilder: (_, __) => Container(width: 15),
-          itemCount: state.categories.length,
-        ),
+        )),
       ),
     );
   }

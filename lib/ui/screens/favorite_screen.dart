@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-
-import '../../states/sticker_state.dart';
+import 'package:get/get.dart';
+import '../../data/_data.dart';
+import '../../states/sticker_controller.dart';
 import '../../ui_kit/_ui_kit.dart';
 import '../widgets/_widgets.dart';
 
@@ -10,38 +10,33 @@ class FavoriteScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final state = context.watch<StickerState>();
-    final favoriteItems = state.favorite;
+    final c = Get.find<StickerController>();
 
     return Scaffold(
-      appBar: _appBar(context),
-      body: EmptyWrapper(
+      appBar: AppBar(
+        title: Text("Favorite screen",
+            style: Theme.of(context).textTheme.displayMedium),
+      ),
+      body: Obx(() => EmptyWrapper(
         type: EmptyWrapperType.favorite,
         title: "Empty favorite",
-        isEmpty: favoriteItems.isEmpty,
-        child: _favoriteListView(context, state),
-      ),
+        isEmpty: c.favorite.isEmpty,
+        child: _favoriteListView(context, c),
+      )),
     );
   }
 
-  PreferredSizeWidget _appBar(BuildContext context) {
-    return AppBar(
-      title: Text("Favorite screen",
-          style: Theme.of(context).textTheme.displayMedium),
-    );
-  }
-
-  Widget _favoriteListView(BuildContext context, StickerState state) {
-    final favoriteItems = state.favorite;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return ListView.separated(
+  Widget _favoriteListView(BuildContext context, StickerController c) {
+    return Obx(() => ListView.separated(
       padding: const EdgeInsets.all(30),
-      itemCount: favoriteItems.length,
+      itemCount: c.favorite.length,
+      separatorBuilder: (_, __) => Container(height: 20),
       itemBuilder: (_, index) {
-        final sticker = favoriteItems[index];
+        final sticker = c.favorite[index];
         return Card(
-          color: isDark ? AppColor.dark : Colors.white,
+          color: Theme.of(context).brightness == Brightness.light
+              ? Colors.white
+              : AppColor.dark,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(15.0),
           ),
@@ -56,14 +51,11 @@ class FavoriteScreen extends StatelessWidget {
             ),
             trailing: IconButton(
               icon: const Icon(AppIcon.heart, color: Colors.redAccent),
-              onPressed: () => context
-                  .read<StickerState>()
-                  .onAddRemoveFavoriteTap(sticker.id),
+              onPressed: () => c.onAddRemoveFavoriteTap(sticker),
             ),
           ),
         );
       },
-      separatorBuilder: (_, __) => Container(height: 20),
-    );
+    ));
   }
 }

@@ -1,19 +1,8 @@
-import 'package:equatable/equatable.dart';
 import '_models.dart';
 
-class StickerCategory extends Equatable {
+class StickerCategory {
   final StickerType type;
-  final bool isSelected;
+  bool isSelected;
 
-  const StickerCategory({required this.type, required this.isSelected});
-
-  @override
-  List<Object?> get props => [type, isSelected];
-
-  StickerCategory copyWith({StickerType? type, bool? isSelected}) {
-    return StickerCategory(
-      type: type ?? this.type,
-      isSelected: isSelected ?? this.isSelected,
-    );
-  }
+  StickerCategory({required this.type, required this.isSelected});
 }

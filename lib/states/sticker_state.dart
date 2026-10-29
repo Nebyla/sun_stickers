@@ -1,126 +1,138 @@
-import 'package:flutter/material.dart'; 
-import 'package:mobx/mobx.dart';
-
+import 'package:flutter/material.dart';
 import '../data/_data.dart';
 
-part 'sticker_state.g.dart'; 
-
-// ignore: library_private_types_in_public_api
-class StickerState = _StickerState with _$StickerState;
-
-abstract class _StickerState with Store {
-  // --- Переменные (Observable) ---
-  
-  @observable
-  List<StickerCategory> categories = AppData.categories;
-
-  @observable
-  List<Sticker> stickers = AppData.stickers;
-
-  @observable
+class StickerState extends ChangeNotifier {
+  List<StickerCategory> categories = List.of(AppData.categories);
+  List<Sticker> stickers = List.of(AppData.stickers);
+  List<Sticker> stickersByCategory = List.of(AppData.stickers);
   List<Sticker> cart = <Sticker>[];
-
-  @observable
   List<Sticker> favorite = <Sticker>[];
-
-  @observable
   bool light = true;
+  String searchQuery = '';
 
-  // Мы храним выбранную категорию, чтобы вычислять список стикеров
-  @observable
-  StickerCategory? selectedCategory;
+  Future<void> onCategoryTap(StickerCategory category) async {
+    categories = categories.map((e) {
+      return e.type == category.type
+          ? e.copyWith(isSelected: true)
+          : e.copyWith(isSelected: false);
+    }).toList();
 
-  // --- Вычисляемые свойства (Computed) ---
+    stickersByCategory = category.type == StickerType.all
+        ? stickers
+        : stickers.where((e) => e.type == category.type).toList();
 
-  // Автоматически пересчитывается при изменении selectedCategory или stickers
-  @computed
-  List<Sticker> get stickersByCategory {
-    if (selectedCategory == null || selectedCategory!.type == StickerType.all) {
-      return stickers;
+    _applySearch();
+    notifyListeners();
+  }
+
+  void onSearchChanged(String query) {
+    searchQuery = query;
+    _applySearch();
+    notifyListeners();
+  }
+
+  void _applySearch() {
+    final selectedCategory = categories.firstWhere(
+          (e) => e.isSelected,
+      orElse: () => categories.first,
+    );
+
+    List<Sticker> base = selectedCategory.type == StickerType.all
+        ? stickers
+        : stickers.where((e) => e.type == selectedCategory.type).toList();
+
+    if (searchQuery.isEmpty) {
+      stickersByCategory = base;
+    } else {
+      stickersByCategory = base
+          .where((e) =>
+          e.name.toLowerCase().contains(searchQuery.toLowerCase()))
+          .toList();
     }
-    return stickers.where((e) => e.type == selectedCategory!.type).toList();
   }
 
-  // Автоматически пересчитывается при изменении cart
-  @computed
-  double get subtotal {
-    double amount = 0.0;
-    for (var e in cart) {
-      amount = amount + e.price * e.quantity;
-    }
-    return amount;
+  Future<void> onIncreaseQuantityTap(int stickerId) async {
+    stickers = stickers.map((e) {
+      return e.id == stickerId
+          ? e.copyWith(quantity: e.quantity + 1)
+          : e;
+    }).toList();
+    _recalculateCartAndFavorite();
+    notifyListeners();
   }
 
-  // --- Действия (Actions) ---
-
-  @action
-  void onCategoryTap(StickerCategory category) {
-    // Сбрасываем выделение у всех
-    for (var e in categories) {
-      e.isSelected = (e.type == category.type);
-    }
-    // Устанавливаем выбранную категорию
-    selectedCategory = category;
+  Future<void> onDecreaseQuantityTap(int stickerId) async {
+    stickers = stickers.map((e) {
+      if (e.id == stickerId) {
+        return e.quantity == 1 ? e : e.copyWith(quantity: e.quantity - 1);
+      }
+      return e;
+    }).toList();
+    _recalculateCartAndFavorite();
+    notifyListeners();
   }
 
-  @action
-  void onIncreaseQuantityTap(Sticker sticker) {
-    sticker.quantity++;
+  Future<void> onAddToCartTap(int stickerId) async {
+    stickers = stickers.map((e) {
+      return e.id == stickerId ? e.copyWith(cart: true) : e;
+    }).toList();
+    _recalculateCartAndFavorite();
+    notifyListeners();
   }
 
-  @action
-  void onDecreaseQuantityTap(Sticker sticker) {
-    if (sticker.quantity == 1) return;
-    sticker.quantity--;
+  Future<void> onRemoveFromCartTap(int stickerId) async {
+    stickers = stickers.map((e) {
+      return e.id == stickerId
+          ? e.copyWith(cart: false, quantity: 1)
+          : e;
+    }).toList();
+    _recalculateCartAndFavorite();
+    notifyListeners();
   }
 
-  @action
-  void onAddToCartTap(Sticker sticker) {
-    sticker.cart = true;
-    _updateCartList();
+  Future<void> onCheckOutTap() async {
+    final cartIds = cart.map((e) => e.id).toSet();
+    stickers = stickers.map((e) {
+      return cartIds.contains(e.id)
+          ? e.copyWith(cart: false, quantity: 1)
+          : e;
+    }).toList();
+    _recalculateCartAndFavorite();
+    notifyListeners();
   }
 
-  @action
-  void onRemoveFromCartTap(Sticker sticker) {
-    sticker.cart = false;
-    sticker.quantity = 1;
-    _updateCartList();
+  Future<void> onAddRemoveFavoriteTap(int stickerId) async {
+    stickers = stickers.map((e) {
+      return e.id == stickerId ? e.copyWith(favorite: !e.favorite) : e;
+    }).toList();
+    _recalculateCartAndFavorite();
+    notifyListeners();
   }
 
-  @action
-  void onCheckOutTap() {
-    for (var e in cart) {
-      e.cart = false;
-      e.quantity = 1;
-    }
-    cart.clear(); // Или _updateCartList() если нужно пересчитать
-  }
-
-  @action
-  void onAddRemoveFavoriteTap(Sticker sticker) {
-    sticker.favorite = !sticker.favorite;
-    _updateFavoriteList();
-  }
-
-  @action
   void toggleTheme() {
     light = !light;
+    notifyListeners();
   }
 
-  // --- Вспомогательные методы ---
-
-  // Обновляем список корзины на основе флагов в стикерах
-  void _updateCartList() {
+  void _recalculateCartAndFavorite() {
     cart = stickers.where((e) => e.cart).toList();
-  }
-
-  // Обновляем список избранного
-  void _updateFavoriteList() {
     favorite = stickers.where((e) => e.favorite).toList();
   }
 
-  // Метод для цены (оставил как есть, но лучше вынести в UI или модель)
-  String stickerPrice(Sticker sticker) {
-    return (sticker.quantity * sticker.price).toString();
+  int getIndex(int stickerId) =>
+      stickers.indexWhere((e) => e.id == stickerId);
+
+  Sticker getStickerById(int stickerId) =>
+      stickers[getIndex(stickerId)];
+
+  String stickerPrice(Sticker sticker) =>
+      (sticker.quantity * sticker.price).toString();
+
+  double get subtotal {
+    double amount = 0.0;
+    for (var e in cart) {
+      amount += e.price * e.quantity;
+    }
+    return amount;
   }
 }

@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-
 import '../../ui_kit/_ui_kit.dart';
 
 class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({Key? key}) : super(key: key);
+  const ProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -15,10 +14,8 @@ class ProfileScreen extends StatelessWidget {
             padding: const EdgeInsets.all(30),
             child: Image.asset(AppAsset.profileImage, width: 300),
           ),
-          Text(
-            "Hello Sunny!",
-            style: Theme.of(context).textTheme.displayLarge,
-          ),
+          Text("Hello Sunny!",
+              style: Theme.of(context).textTheme.displayLarge),
         ],
       ),
     );

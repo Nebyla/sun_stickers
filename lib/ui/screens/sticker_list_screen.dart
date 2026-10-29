@@ -1,84 +1,77 @@
 import 'package:badges/badges.dart';
 import 'package:flutter/material.dart' hide Badge;
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:provider/provider.dart';
 
-
-import '../../data/_data.dart';
+import '../../states/sticker_state.dart';
 import '../../ui_kit/_ui_kit.dart';
-import '../_ui.dart';
+import '../extensions/app_extensions.dart';
+import '../widgets/_widgets.dart';
 
 class StickerList extends StatelessWidget {
-  StickerList({super.key});
-  var categories = AppData.categories;
-
+  const StickerList({super.key});
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-        appBar: _appBar(context),
-        body: Padding(
-          padding: const EdgeInsets.all(20),
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Morning, Sunny",
-                  style: Theme.of(context).textTheme.headlineSmall,
+  Widget build(BuildContext context) {
+    final state = context.watch<StickerState>();
+
+    return Scaffold(
+      appBar: _appBar(context),
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text("Morning, Sunny",
+                  style: Theme.of(context).textTheme.headlineSmall),
+              Text("What sticker do you want\nto buy today",
+                  style: Theme.of(context).textTheme.displayLarge),
+              _searchBar(context),
+              Text("Available for you",
+                  style: Theme.of(context).textTheme.displaySmall),
+              _categories(context, state),
+              StickerListView(stickers: state.stickersByCategory),
+              Padding(
+                padding: const EdgeInsets.only(top: 25, bottom: 5),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text("Best stickers of the week",
+                        style: Theme.of(context).textTheme.displaySmall),
+                    Padding(
+                      padding: const EdgeInsets.only(right: 20),
+                      child: Text("See all",
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineMedium
+                              ?.copyWith(color: AppColor.accent)),
+                    ),
+                  ],
                 ),
-                Text(
-                  "What sticker do you want\nto buy today",
-                  style: Theme.of(context).textTheme.displayLarge,
-                ),
-                _searchBar(),
-                Text(
-                  "Available for you",
-                  style: Theme.of(context).textTheme.displaySmall,
-                ),
-                _categories(context),
-                StickerListView(stickers: AppData.stickers),
-                Padding(
-                  padding: const EdgeInsets.only(top: 25, bottom: 5),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        "Best stickers of the week",
-                        style: Theme.of(context).textTheme.displaySmall,
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.only(right: 20),
-                        child: Text(
-                          "See all",
-                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: AppColor.accent),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                StickerListView(
-                  stickers: AppData.stickers,
-                  isReversed: true,
-                ),
-              ],
-            ),
+              ),
+              StickerListView(
+                stickers: state.stickers,
+                isReversed: true,
+              ),
+            ],
           ),
         ),
-      );
+      ),
+    );
+  }
 
   PreferredSizeWidget _appBar(BuildContext context) {
     return AppBar(
       leading: IconButton(
         icon: const FaIcon(FontAwesomeIcons.dice),
-        onPressed: () {},
+        onPressed: () => context.read<StickerState>().toggleTheme(),
       ),
       title: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const Icon(Icons.location_on_outlined, color: AppColor.accent),
-          Text(
-            "Location",
-            style: Theme.of(context).textTheme.bodyLarge,
-          )
+          Text("Location", style: Theme.of(context).textTheme.bodyLarge),
         ],
       ),
       actions: [
@@ -86,23 +79,23 @@ class StickerList extends StatelessWidget {
           onPressed: () {},
           icon: Badge(
             badgeStyle: const BadgeStyle(badgeColor: AppColor.accent),
-            badgeContent: const Text(
-              "2",
-              style: TextStyle(color: Colors.white),
-            ),
+            badgeContent:
+            const Text("2", style: TextStyle(color: Colors.white)),
             position: BadgePosition.topStart(start: -3),
             child: const Icon(Icons.notifications_none, size: 30),
           ),
-        )
+        ),
       ],
     );
   }
 
-  Widget _searchBar() {
-    return const Padding(
-      padding: EdgeInsets.symmetric(vertical: 20, horizontal: 10),
+  Widget _searchBar(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 10),
       child: TextField(
-        decoration: InputDecoration(
+        onChanged: (value) =>
+            context.read<StickerState>().onSearchChanged(value),
+        decoration: const InputDecoration(
           hintText: 'Search sticker',
           prefixIcon: Icon(Icons.search, color: Colors.grey),
         ),
@@ -110,37 +103,38 @@ class StickerList extends StatelessWidget {
     );
   }
 
-  Widget _categories(BuildContext context) {
+  Widget _categories(BuildContext context, StickerState state) {
     return Padding(
       padding: const EdgeInsets.only(top: 8.0),
       child: SizedBox(
         height: 40,
         child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemBuilder: (_, index) {
-              final category = categories[index];
-              return GestureDetector(
-                onTap: () {},
-                child: Container(
-                  width: 100,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: category.isSelected ? AppColor.accent : Colors.transparent,
-                    borderRadius: const BorderRadius.all(
-                      Radius.circular(15),
-                    ),
-                  ),
-                  child: Text(
-                    category.type.name.firstCapital,
-                    style: Theme.of(context).textTheme.headlineMedium,
-                  ),
+          scrollDirection: Axis.horizontal,
+          itemBuilder: (_, index) {
+            final category = state.categories[index];
+            return GestureDetector(
+              onTap: () =>
+                  context.read<StickerState>().onCategoryTap(category),
+              child: Container(
+                width: 100,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: category.isSelected
+                      ? AppColor.accent
+                      : Colors.transparent,
+                  borderRadius:
+                  const BorderRadius.all(Radius.circular(15)),
                 ),
-              );
-            },
-            separatorBuilder: (_, __) => Container(
-                  width: 15,
+                child: Text(
+                  category.type.name.firstCapital,
+                  style: Theme.of(context).textTheme.headlineMedium,
                 ),
-            itemCount: categories.length),
+              ),
+            );
+          },
+          separatorBuilder: (_, __) => Container(width: 15),
+          itemCount: state.categories.length,
+        ),
       ),
     );
   }

@@ -1,38 +1,38 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/_data.dart';
-import '../../states/sticker_controller.dart';
+import '../../states/sticker_provider.dart';
 import '../../ui_kit/_ui_kit.dart';
 import '../widgets/_widgets.dart';
 
-class FavoriteScreen extends StatelessWidget {
+class FavoriteScreen extends ConsumerWidget {
   const FavoriteScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final c = Get.find<StickerController>();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final favoriteItems = ref.watch(stickerProvider).favorite;
 
     return Scaffold(
       appBar: AppBar(
         title: Text("Favorite screen",
             style: Theme.of(context).textTheme.displayMedium),
       ),
-      body: Obx(() => EmptyWrapper(
+      body: EmptyWrapper(
         type: EmptyWrapperType.favorite,
         title: "Empty favorite",
-        isEmpty: c.favorite.isEmpty,
-        child: _favoriteListView(context, c),
-      )),
+        isEmpty: favoriteItems.isEmpty,
+        child: _favoriteListView(context, ref, favoriteItems),
+      ),
     );
   }
 
-  Widget _favoriteListView(BuildContext context, StickerController c) {
-    return Obx(() => ListView.separated(
+  Widget _favoriteListView(
+      BuildContext context, WidgetRef ref, List<Sticker> favoriteItems) {
+    return ListView.separated(
       padding: const EdgeInsets.all(30),
-      itemCount: c.favorite.length,
-      separatorBuilder: (_, __) => Container(height: 20),
+      itemCount: favoriteItems.length,
       itemBuilder: (_, index) {
-        final sticker = c.favorite[index];
+        final sticker = favoriteItems[index];
         return Card(
           color: Theme.of(context).brightness == Brightness.light
               ? Colors.white
@@ -44,18 +44,19 @@ class FavoriteScreen extends StatelessWidget {
             title: Text(sticker.name,
                 style: Theme.of(context).textTheme.headlineMedium),
             leading: Image.asset(sticker.image),
-            subtitle: Text(
-              sticker.description,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodyLarge,
-            ),
+            subtitle: Text(sticker.description,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodyLarge),
             trailing: IconButton(
               icon: const Icon(AppIcon.heart, color: Colors.redAccent),
-              onPressed: () => c.onAddRemoveFavoriteTap(sticker),
+              onPressed: () => ref
+                  .read(stickerProvider.notifier)
+                  .onAddRemoveFavoriteTap(sticker.id),
             ),
           ),
         );
       },
-    ));
+      separatorBuilder: (_, __) => Container(height: 20),
+    );
   }
 }

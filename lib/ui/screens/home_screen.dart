@@ -1,31 +1,40 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/_data.dart';
 import '_screens.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  int currentIndex = 0;
+
+  void onTabTap(int index) {
+    if (currentIndex == index) return;
+    setState(() => currentIndex = index);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final currentIndex = 0.obs;
+    final screens = [
+      const StickerList(),
+      const CartScreen(),
+      const FavoriteScreen(),
+      const ProfileScreen(),
+    ];
 
     return Scaffold(
       body: SafeArea(
-        child: Obx(() => IndexedStack(
-          index: currentIndex.value,
-          children: const [
-            StickerList(),
-            CartScreen(),
-            FavoriteScreen(),
-            ProfileScreen(),
-          ],
-        )),
+        child: IndexedStack(index: currentIndex, children: screens),
       ),
-      bottomNavigationBar: Obx(() => BottomNavigationBar(
-        currentIndex: currentIndex.value,
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: currentIndex,
+        onTap: onTabTap,
         selectedFontSize: 0,
-        onTap: (index) => currentIndex.value = index,
         items: AppData.bottomNavigationItems.map((element) {
           return BottomNavigationBarItem(
             icon: element.disableIcon,
@@ -33,7 +42,7 @@ class HomeScreen extends StatelessWidget {
             activeIcon: element.enableIcon,
           );
         }).toList(),
-      )),
+      ),
     );
   }
 }

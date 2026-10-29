@@ -1,81 +1,66 @@
-import 'package:flutter/material.dart';
-
+import 'package:equatable/equatable.dart';
 import '../data/_data.dart';
-import '../ui/_ui.dart';
 
-class StickerState {
-  StickerState._();
-  static final _instance = StickerState._();
-  factory StickerState() => _instance;
+class StickerState extends Equatable {
+  final List<StickerCategory> categories;
+  final List<Sticker> stickers;
+  final List<Sticker> stickersByCategory;
+  final List<Sticker> cart;
+  final List<Sticker> favorite;
+  final bool light;
 
-  List<StickerCategory> categories = AppData.categories;
-  List<Sticker> stickers = AppData.stickers;
-  List<Sticker> stickersByCategory = AppData.stickers;
-  List<Sticker> cart = <Sticker>[];
-  List<Sticker> favorite = <Sticker>[];
-  bool light = true;
+  const StickerState({
+    required this.categories,
+    required this.stickers,
+    required this.stickersByCategory,
+    required this.cart,
+    required this.favorite,
+    required this.light,
+  });
 
-  Future<void> onCategoryTap(StickerCategory category) async {
-    categories.map((e) {
-      if (e.type == category.type) {
-        e.isSelected = true;
-      } else {
-        e.isSelected = false;
-      }
-    }).toList();
-    if (category.type == StickerType.all) {
-      stickersByCategory = stickers;
-    } else {
-      stickersByCategory = stickers.where((e) => e.type == category.type).toList();
-    }
+  factory StickerState.initial() => StickerState(
+    categories: AppData.categories,
+    stickers: AppData.stickers,
+    stickersByCategory: AppData.stickers,
+    cart: const <Sticker>[],
+    favorite: const <Sticker>[],
+    light: true,
+  );
+
+  @override
+  List<Object?> get props =>
+      [categories, stickers, stickersByCategory, cart, favorite, light];
+
+  StickerState copyWith({
+    List<StickerCategory>? categories,
+    List<Sticker>? stickers,
+    List<Sticker>? stickersByCategory,
+    List<Sticker>? cart,
+    List<Sticker>? favorite,
+    bool? light,
+  }) {
+    return StickerState(
+      categories: categories ?? this.categories,
+      stickers: stickers ?? this.stickers,
+      stickersByCategory: stickersByCategory ?? this.stickersByCategory,
+      cart: cart ?? this.cart,
+      favorite: favorite ?? this.favorite,
+      light: light ?? this.light,
+    );
   }
 
-  Future<void> onIncreaseQuantityTap(Sticker sticker) async {
-    sticker.quantity++;
-  }
-
-  Future<void> onDecreaseQuantityTap(Sticker sticker) async {
-    if (sticker.quantity == 1) return;
-    sticker.quantity--;
-  }
-
-  Future<void> onAddToCartTap(Sticker sticker) async {
-    sticker.cart = true;
-    cart = stickers.where((e) => e.cart).toList();
-  }
-
-  Future<void> onRemoveFromCartTap(Sticker sticker) async {
-    sticker.cart = false;
-    sticker.quantity = 1;
-    cart = stickers.where((e) => e.cart).toList();
-  }
-
-  Future<void> onCheckOutTap() async {
-    for (var e in cart) {
-      e.cart = false;
-      e.quantity = 1;
-    }
-    cart = stickers.where((e) => e.cart).toList();
-  }
-
-  Future<void> onAddRemoveFavoriteTap(Sticker sticker) async {
-    sticker.favorite = !sticker.favorite;
-    favorite = stickers.where((e) => e.favorite).toList();
-  }
-
-  void toggleTheme() {
-    light = !light;
-  }
-
-  String stickerPrice(Sticker sticker) {
-    return (sticker.quantity * sticker.price).toString();
-  }
+  String stickerPrice(Sticker sticker) =>
+      (sticker.quantity * sticker.price).toString();
 
   double get subtotal {
     double amount = 0.0;
     for (var e in cart) {
-      amount = amount + e.price * e.quantity;
+      amount += e.price * e.quantity;
     }
     return amount;
   }
+
+  int getIndex(int stickerId) => stickers.indexWhere((e) => e.id == stickerId);
+
+  Sticker getStickerById(int stickerId) => stickers[getIndex(stickerId)];
 }

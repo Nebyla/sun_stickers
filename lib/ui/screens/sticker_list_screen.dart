@@ -1,21 +1,23 @@
 import 'package:badges/badges.dart';
 import 'package:flutter/material.dart' hide Badge;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:get/get.dart';
-import '../../states/sticker_controller.dart';
-import '../extensions/_extensions.dart';
+import 'package:studentwor/ui/screens/sticker_detail_screen.dart';
+import '../../data/models/sticker.dart';
+import '../../states/sticker_provider.dart';
 import '../../ui_kit/_ui_kit.dart';
 import '../widgets/_widgets.dart';
 
-class StickerList extends StatelessWidget {
+class StickerList extends ConsumerWidget {
   const StickerList({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final c = Get.find<StickerController>();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(stickerProvider);
+    final notifier = ref.read(stickerProvider.notifier);
 
     return Scaffold(
-      appBar: _appBar(context, c),
+      appBar: _appBar(context, ref),
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: SingleChildScrollView(
@@ -29,10 +31,11 @@ class StickerList extends StatelessWidget {
               _searchBar(),
               Text("Available for you",
                   style: Theme.of(context).textTheme.displaySmall),
-
-              _categories(context, c),
-              Obx(() => StickerListView(stickers: c.stickersByCategory.value)),
-
+              _categories(context, ref, state),
+              StickerListView(
+                stickers: state.stickersByCategory,
+                onTap: (sticker) => _openDetail(context, sticker),
+              ),
               Padding(
                 padding: const EdgeInsets.only(top: 25, bottom: 5),
                 child: Row(
@@ -51,10 +54,11 @@ class StickerList extends StatelessWidget {
                   ],
                 ),
               ),
-              Obx(() => StickerListView(
-                stickers: c.stickers.value,
+              StickerListView(
+                stickers: state.stickers,
                 isReversed: true,
-              )),
+                onTap: (sticker) => _openDetail(context, sticker),
+              ),
             ],
           ),
         ),
@@ -62,11 +66,19 @@ class StickerList extends StatelessWidget {
     );
   }
 
-  PreferredSizeWidget _appBar(BuildContext context, StickerController c) {
+  void _openDetail(BuildContext context, sticker) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => StickerDetail(stickerId: sticker.id),
+      ),
+    );
+  }
+
+  PreferredSizeWidget _appBar(BuildContext context, WidgetRef ref) {
     return AppBar(
       leading: IconButton(
         icon: const FaIcon(FontAwesomeIcons.dice),
-        onPressed: c.toggleTheme,
+        onPressed: () => ref.read(stickerProvider.notifier).toggleTheme(),
       ),
       title: Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -102,19 +114,18 @@ class StickerList extends StatelessWidget {
     );
   }
 
-  Widget _categories(BuildContext context, StickerController c) {
+  Widget _categories(BuildContext context, WidgetRef ref, state) {
     return Padding(
       padding: const EdgeInsets.only(top: 8.0),
       child: SizedBox(
         height: 40,
-        child: Obx(() => ListView.separated(
+        child: ListView.separated(
           scrollDirection: Axis.horizontal,
-          itemCount: c.categories.length,
-          separatorBuilder: (_, __) => Container(width: 15),
           itemBuilder: (_, index) {
-            final category = c.categories[index];
+            final category = state.categories[index];
             return GestureDetector(
-              onTap: () => c.onCategoryTap(category),
+              onTap: () =>
+                  ref.read(stickerProvider.notifier).onCategoryTap(category),
               child: Container(
                 width: 100,
                 alignment: Alignment.center,
@@ -122,18 +133,31 @@ class StickerList extends StatelessWidget {
                   color: category.isSelected
                       ? AppColor.accent
                       : Colors.transparent,
-                  borderRadius:
-                  const BorderRadius.all(Radius.circular(15)),
+                  borderRadius: const BorderRadius.all(Radius.circular(15)),
                 ),
                 child: Text(
-                  category.type.name.firstCapital,
+                  _categoryLabel(category.type),
                   style: Theme.of(context).textTheme.headlineMedium,
                 ),
               ),
             );
           },
-        )),
+          separatorBuilder: (_, __) => Container(width: 15),
+          itemCount: state.categories.length,
+        ),
       ),
     );
+  }
+
+  String _categoryLabel(StickerType type) {
+    switch (type) {
+      case StickerType.all:   return 'All';
+      case StickerType.toy:   return 'Toy';
+      case StickerType.fauna: return 'Fauna';
+      case StickerType.plant: return 'Plant';
+      case StickerType.berry: return 'Berry';
+      case StickerType.fruit: return 'Fruit';
+      case StickerType.other: return 'Other';
+    }
   }
 }

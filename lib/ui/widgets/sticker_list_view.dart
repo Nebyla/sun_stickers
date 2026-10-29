@@ -1,39 +1,33 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 import '../../data/_data.dart';
 import '../../ui_kit/_ui_kit.dart';
-import '../screens/sticker_detail_screen.dart';
 
 class StickerListView extends StatelessWidget {
   const StickerListView({
     super.key,
     required this.stickers,
     this.isReversed = false,
+    required this.onTap,
   });
 
   final List<Sticker> stickers;
   final bool isReversed;
+  final void Function(Sticker sticker) onTap;
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final list = isReversed ? stickers.reversed.toList() : stickers;
 
     return SizedBox(
       height: 200,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.only(top: 20),
-        itemCount: stickers.length,
-        separatorBuilder: (_, __) => Container(width: 50),
         itemBuilder: (_, index) {
-          Sticker sticker = isReversed
-              ? stickers.reversed.toList()[index]
-              : stickers[index];
+          final sticker = list[index];
           return GestureDetector(
-            onTap: () => Get.to(
-                  () => const StickerDetail(),
-              arguments: sticker,
-            ),
+            onTap: () => onTap(sticker),
             child: Container(
               width: 160,
               decoration: BoxDecoration(
@@ -60,6 +54,8 @@ class StickerListView extends StatelessWidget {
             ),
           );
         },
+        separatorBuilder: (_, __) => Container(width: 50),
+        itemCount: stickers.length,
       ),
     );
   }

@@ -1,53 +1,70 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:get/get.dart';
 import '../../data/_data.dart';
-import '../../states/sticker_controller.dart';
+import '../../states/sticker_provider.dart';
+import '../../states/sticker_state.dart';
 import '../../ui_kit/_ui_kit.dart';
 import '../widgets/_widgets.dart';
 
-class CartScreen extends StatelessWidget {
+class CartScreen extends ConsumerStatefulWidget {
   const CartScreen({super.key});
 
   @override
+  ConsumerState<CartScreen> createState() => _CartScreenState();
+}
+
+class _CartScreenState extends ConsumerState<CartScreen> {
+  double taxes = 5.0;
+
+  @override
   Widget build(BuildContext context) {
-    final c = Get.find<StickerController>();
+    final state = ref.watch(stickerProvider);
+    final cartItems = state.cart;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text("Cart screen",
-            style: Theme.of(context).textTheme.displayMedium),
-      ),
-      body: Obx(() => EmptyWrapper(
+      appBar: _appBar(context),
+      body: EmptyWrapper(
         title: "Empty cart",
-        isEmpty: c.cart.value.isEmpty,
-        child: _cartListView(context, c),
-      )),
-      bottomNavigationBar: Obx(() => c.cart.value.isEmpty
-          ? const SizedBox()
-          : _bottomAppBar(context, c)),
+        isEmpty: cartItems.isEmpty,
+        child: _cartListView(context, state),
+      ),
+      bottomNavigationBar:
+      cartItems.isEmpty ? const SizedBox() : _bottomAppBar(context, state),
     );
   }
 
-  Widget _cartListView(BuildContext context, StickerController c) {
-    return Obx(() => ListView.separated(
+  PreferredSizeWidget _appBar(BuildContext context) {
+    return AppBar(
+      title: Text("Cart screen",
+          style: Theme.of(context).textTheme.displayMedium),
+    );
+  }
+
+  Widget _cartListView(BuildContext context, StickerState state) {
+    final cartItems = state.cart;
+    final notifier = ref.read(stickerProvider.notifier);
+    return ListView.separated(
       padding: const EdgeInsets.all(30),
-      itemCount: c.cart.value.length,
-      separatorBuilder: (_, __) => Container(height: 20),
+      itemCount: cartItems.length,
       itemBuilder: (_, index) {
-        final sticker = c.cart.value[index];
+        final sticker = cartItems[index];
         return Dismissible(
           direction: DismissDirection.endToStart,
-          onDismissed: (_) => c.onRemoveFromCartTap(sticker),
-          key: UniqueKey(),
-          background: Container(
-            alignment: Alignment.centerRight,
-            padding: const EdgeInsets.only(right: 15),
-            decoration: BoxDecoration(
-              color: Colors.redAccent,
-              borderRadius: BorderRadius.circular(15),
-            ),
-            child: const FaIcon(FontAwesomeIcons.trash),
+          onDismissed: (_) => notifier.onRemoveFromCartTap(sticker.id),
+          key: ValueKey(sticker.id),
+          background: Row(
+            children: [
+              Container(
+                padding:
+                const EdgeInsets.symmetric(horizontal: 15, vertical: 25),
+                decoration: BoxDecoration(
+                  color: Colors.redAccent,
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: const FaIcon(FontAwesomeIcons.trash),
+              ),
+            ],
           ),
           child: Container(
             width: double.infinity,
@@ -63,41 +80,32 @@ class CartScreen extends StatelessWidget {
                 const SizedBox(width: 20),
                 Image.asset(sticker.image, scale: 10),
                 const SizedBox(width: 20),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(sticker.name,
-                          style: Theme.of(context)
-                              .textTheme
-                              .displayMedium),
-                      const SizedBox(height: 5),
-                      Text("\$${sticker.price}",
-                          style: Theme.of(context)
-                              .textTheme
-                              .headlineSmall),
-                    ],
-                  ),
-                ),
                 Column(
-                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(sticker.name,
+                        style: Theme.of(context).textTheme.displayMedium),
+                    const SizedBox(height: 5),
+                    Text("\$${sticker.price}",
+                        style: Theme.of(context).textTheme.headlineSmall),
+                  ],
+                ),
+                const Spacer(),
+                Column(
                   children: [
                     CounterButton(
                       onIncrementTap: () =>
-                          c.onIncreaseQuantityTap(sticker),
+                          notifier.onIncreaseQuantityTap(sticker.id),
                       onDecrementTap: () =>
-                          c.onDecreaseQuantityTap(sticker),
+                          notifier.onDecreaseQuantityTap(sticker.id),
                       size: const Size(24, 24),
                       padding: 0,
-                      label: Text(
-                        sticker.quantity.toString(),
-                        style: Theme.of(context)
-                            .textTheme
-                            .displayMedium,
-                      ),
+                      label: Text(sticker.quantity.toString(),
+                          style:
+                          Theme.of(context).textTheme.displayMedium),
                     ),
                     Text(
-                      "\$${c.stickerPrice(sticker)}",
+                      "\$${state.stickerPrice(sticker)}",
                       style: AppTextStyle.h2Style
                           .copyWith(color: AppColor.accent),
                     ),
@@ -108,46 +116,56 @@ class CartScreen extends StatelessWidget {
           ),
         );
       },
-    ));
+      separatorBuilder: (_, __) => Container(height: 20),
+    );
   }
 
-  Widget _bottomAppBar(BuildContext context, StickerController c) {
+  Widget _bottomAppBar(BuildContext context, StickerState state) {
+    final notifier = ref.read(stickerProvider.notifier);
     return ClipRRect(
       borderRadius: const BorderRadius.only(
         topLeft: Radius.circular(30),
         topRight: Radius.circular(30),
       ),
-      child: Container(
-        height: 250,
-        color: Theme.of(context).brightness == Brightness.dark
-            ? AppColor.dark
-            : Colors.white,
-        child: Padding(
-          padding: const EdgeInsets.all(30),
-          child: Column(
-            children: [
-              _row(context, "Subtotal", "\$${c.subtotal.toString()}"),
-              const SizedBox(height: 15),
-              _row(context, "Taxes", "\$5.0"),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20),
-                child: Divider(thickness: 4.0, height: 30.0),
-              ),
-              _row(context, "Total", "\$${(c.subtotal + 5.0).toString()}",
-                  accent: true),
-              const SizedBox(height: 30),
-              SizedBox(
-                width: double.infinity,
-                height: 45,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 30),
-                  child: ElevatedButton(
-                    onPressed: c.onCheckOutTap,
-                    child: const Text("Checkout"),
-                  ),
+      child: BottomAppBar(
+        child: SizedBox(
+          height: 250,
+          child: Container(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? AppColor.dark
+                : Colors.white,
+            child: Padding(
+              padding: const EdgeInsets.all(30),
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    _row(context, "Subtotal",
+                        "\$${state.subtotal.toString()}"),
+                    const SizedBox(height: 15),
+                    _row(context, "Taxes", "\$${taxes.toString()}"),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 20),
+                      child: Divider(thickness: 4.0, height: 30.0),
+                    ),
+                    _row(context, "Total",
+                        "\$${(state.subtotal + taxes).toString()}",
+                        accent: true),
+                    const SizedBox(height: 30),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 45,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 30),
+                        child: ElevatedButton(
+                          onPressed: notifier.onCheckOutTap,
+                          child: const Text("Checkout"),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
+            ),
           ),
         ),
       ),

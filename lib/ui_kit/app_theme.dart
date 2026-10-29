@@ -105,6 +105,8 @@ class AppTheme {
       unselectedItemColor: Colors.white70,
     ),
     iconTheme: const IconThemeData(color: Colors.white),
-    bottomAppBarTheme: const BottomAppBarTheme(color: AppColor.primaryDark),
+    bottomAppBarTheme: const BottomAppBarTheme(
+      color: AppColor.dark,
+    ),
   );
 }
